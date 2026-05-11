@@ -1,0 +1,20 @@
+#include <Arduino_FreeRTOS.h>
+#define LED 1 6
+TaskHandle_t Task 1 Handle;
+void Task 1 (void *
+pinMode(LED 1 ,
+while ( 1
+digitalWrite(LED 1 , !digitalRead(LED 1
+Serial.println("TASK 1 Running");
+vTa skDelay( 500 / portTICK_PERIOD_
+void ControlTask(void *pvParameters)
+vTaskDelay( 3000 / portTICK_PERIOD_
+Serial.println("Suspending TASK 1
+vTaskSuspend(Task 1 Handle);
+vTaskDelay( 3000 / portTICK_PERIOD_
+Serial.println("Resuming TASK 1
+// RESUME TASK
+vTaskResume(Task 1 Handle);
+while ( 1
+}
+} void setup()void setup() {{ Serial.begin(Serial.begin(96009600);); xTaskCreate(TaskxTaskCreate(Task11, "Task, "Task11", ", 128128, NULL, , NULL, 11, &Task, &Task11Handle);Handle); xTaskCreate(ControlTask, "Control", xTaskCreate(ControlTask, "Control", 128128, NULL, , NULL, 22, NULL);, NULL); }} void loop()void loop() {
