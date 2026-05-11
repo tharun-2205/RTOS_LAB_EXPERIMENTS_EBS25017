@@ -1,0 +1,11 @@
+Mailbox Creation
+QueueHandle_t mailbox; mailbox = xQueueCreate(1, sizeof(int)); // Queue size = 1 → Mailbox
+Sender Task (Transmit Data)
+void SenderTask(void *pvParameters) { int value = 0; while(1) { value++; xQueueOverwrite(mailbox, &value); vTaskDelay(1000 / portTICK_PERIOD_MS); } }
+Receiver Task (Receive Data)
+void ReceiverTask(void *pvParameters) { int receivedValue; while(1) { if (xQueueReceive(mailbox, &receivedValue, portMAX_DELAY) == pdPASS) { Serial.print("Received Value: "); Serial.println(receivedValue); } } }
+Task Creation
+xTaskCreate(SenderTask, "Sender", 128, NULL, 1, NULL); xTaskCreate(ReceiverTask, "Receiver", 128, NULL, 1, NULL);
+Important APIs Used
+xQueueCreate() // Create mailbox xQueueOverwrite() // Send (overwrite old data)
+xQueueReceive() // Receive data vTaskDelay() // Task delay
