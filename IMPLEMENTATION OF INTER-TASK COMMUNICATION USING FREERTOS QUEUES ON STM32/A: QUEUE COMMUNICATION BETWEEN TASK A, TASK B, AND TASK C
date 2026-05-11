@@ -1,0 +1,77 @@
+#include "main.h"
+#include "cmsis_os.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include <stdio.h>
+QueueHandle_t xQueue;
+/* Function Prototypes */
+void SystemClock_Config(void);
+void MX_FREERTOS_Init(void);
+void TaskA(void *argument);
+void TaskB(void *argument);
+void TaskC(void *argument);
+int main(void)
+{
+HAL_Init();
+SystemClock_Config();
+MX_FREERTOS_Init();
+osKernelStart();
+while (1);
+}
+void SystemClock_Config(void)
+{
+}
+/* FreeRTOS Initialization */
+void MX_FREERTOS_Init(void)
+{
+/* Create Queue */
+xQueue = xQueueCreate(10, sizeof(char));
+/* Create Tasks */
+xTaskCreate(TaskA, "TaskA", 128, NULL, 2, NULL);
+xTaskCreate(TaskB, "TaskB", 128, NULL, 2, NULL);
+xTaskCreate(TaskC, "TaskC", 128, NULL, 1, NULL);
+}
+/* Task A */
+void TaskA(void *argument)
+{
+char data = 'A';
+while(1)
+{
+xQueueSend(xQueue, &data, portMAX_DELAY);
+printf("Task A Sent: %c\r\n", data);
+data++;
+if(data > 'E')
+data = 'A';
+vTaskDelay(pdMS_TO_TICKS(1000));
+}
+}
+/* Task B */
+void TaskB(void *argument)
+{
+char data = '1';
+while(1)
+{
+xQueueSend(xQueue, &data, portMAX_DELAY);
+printf("Task B Sent: %c\r\n", data);
+data++;
+if(data > '5')
+data = '1';
+vTaskDelay(pdMS_TO_TICKS(1500));
+}
+}
+/* Task C */
+void TaskC(void *argument)
+{
+char receivedData;
+while(1)
+{
+if(xQueueReceive(xQueue,
+&receivedData,
+portMAX_DELAY) == pdPASS)
+{
+printf("Task C Received: %c\r\n",
+receivedData);
+}
+}
+}
