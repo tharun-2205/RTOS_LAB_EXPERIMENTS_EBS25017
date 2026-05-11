@@ -1,0 +1,376 @@
+#include "main.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
+#includ
+e <stdio.h>
+#include <string.h>
+/* USER CODE BEGIN Includes */
+/* USER CODE END Includes */
+/* Private variables
+UART_HandleTypeDef huart2;
+/* USER CODE BEGIN PV */
+SemaphoreHandle_t xMutex;
+TaskHandle_t PrintTask1Handle = NULL;
+TaskHandle_t PrintTask2Handle = NULL;
+TaskHandle_t SameTask1Handle = NULL;
+TaskHandle_t SameTask2Handle = NULL;
+TaskHandle_t LEDTask1Handle = NULL;
+TaskHandle_t LEDTask2Handle = NULL;
+/*
+NOTE:NOTE:
+NoNo--delay tasks ardelay tasks are written below for observation.e written below for observation.
+They are NOT created in main by default because they can dominate the CPU.They are NOT created in main by default because they can dominate the CPU.
+To test noTo test no--delay behavior, uncomment their xTaskCreate() lines in main().delay behavior, uncomment their xTaskCreate() lines in main().
+*/
+*/
+TaskHandle_t NoDelayTask1Handle = NULL;
+TaskHandle_t NoDelayTask1Handle = NULL;
+TaskHandle_t
+TaskHandle_t NoDelayTask2Handle = NULL;NoDelayTask2Handle = NULL;
+/* USER CODE END PV */
+/* USER CODE END PV */
+/* Private function prototypes
+/* Private function prototypes ----------------------------------------------------------------------------------------------*/*/
+void SystemClock_Config(void);
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_GPIO_Init(void);
+static void MX_USART2_UART_Init(void);
+static void MX_USART2_UART_Init(void);
+/* USER CODE BEGIN
+/* USER CODE BEGIN PFP */PFP */
+void UART_Print(char *msg);
+void UART_Print(char *msg);
+void Print_Task1(void *argument);
+void Print_Task1(void *argument);
+void Print_Task2(void *argument);
+void Print_Task2(void *argument);
+void SamePriority_Task1(void *argument);
+void SamePriority_Task1(void *argument);
+void SamePriority_Task2(void *argument);
+void SamePriority_Task2(void *argument);
+void NoDelay_Task1(void *argument);
+void NoDelay_Task1(void *argument);
+void NoDelay_Task2(void *argume
+void NoDelay_Task2(void *argument);nt);
+void LED_Task1(void *argument);
+void LED_Task1(void *argument);
+void LED_Task2(void *argument);
+void LED_Task2(void *argument);
+/* USER CODE END PFP */
+/* USER CODE END PFP */
+/* USER CODE BEGIN 0 */
+/* USER CODE BEGIN 0 */
+/* Mutex protected UART print function */
+/* Mutex protected UART print function */
+void UART_Print(char *msg)
+void UART_Print(char *msg)
+{
+{
+if (xMutex != NULL)if (xMutex != NULL)
+{{
+if (xSemaphoreTake(xMutexif (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE), portMAX_DELAY) == pdTRUE)
+{{
+HAL_UART_Transmit(&huart2,HAL_UART_Transmit(&huart2,
+(uint8_t *)msg,(uint8_t *)msg,
+strlen(msg),strlen(msg),
+HAL_MAX_DELAY);HAL_MAX_DELAY);
+xSemaphoreGive(xMutex);xSemaphoreGive(xMutex);
+}}
+}}
+}
+}
+/* Objective 1: Two different tasks printing different messages */
+/* Objective 1: Two different tasks printing different messages */
+void Print_Task1(void *argument)
+void Print_Task1(void *argument)
+{
+{
+while (1)while (1)
+{{
+UART_Print("Objective 1 UART_Print("Objective 1 -- Task 1: Hello from first taskTask 1: Hello from first task\\rr\\n");n");
+vTaskDelay(pdMS_TO_TICKS(1000));vTaskDelay(pdMS_TO_TICKS(1000));
+}}
+}
+}
+void Print_Task2(void *argument)
+void Print_Task2(void *argument)
+{
+{
+while (1)while (1)
+{{
+UART_Print("Objective 1 UART_Print("Objective 1 -- Task 2: Hello from second taskTask 2: Hello from second task\\rr\\n");n");
+vTaskDelay(pdMS_TO_TICKS(1200));vTaskDelay(pdMS_TO_TICKS(1200));
+}}
+}
+}
+/* Objective 3: Same priority tasks */
+/* Objective 3: Same priority tasks */
+void SamePriority_Task1(void *argument)
+void SamePriority_Task1(void *argument)
+{
+{
+while (1)while (1)
+{{
+UART_Print("Objective 3 UART_Print("Objective 3 -- Same Priority Task 1 is runningSame Priority Task 1 is running\\rr\\n");n");
+vTaskDelay(pdMS_TO_TICKS(1500));vTaskDelay(pdMS_TO_TICKS(1500));
+}}
+}
+}
+void SamePriority_Task2(void *argument)
+void SamePriority_Task2(void *argument)
+{
+{
+while (1)while (1)
+{{
+UART_Print("Objective 3 UART_Print("Objective 3 -- Same Priority TSame Priority Task 2 is runningask 2 is running\\rr\\n");n");
+vTaskDelay(pdMS_TO_TICKS(1500));vTaskDelay(pdMS_TO_TICKS(1500));
+}}
+}
+}
+/* Objective 4: Tasks without delay */
+/* Objective 4: Tasks without delay */
+void NoDelay_Task1(void *argument)
+void NoDelay_Task1(void *argument)
+{
+{
+while (1)while (1)
+{{
+UART_Print("Objective 4 UART_Print("Objective 4 -- No Delay High Priority Task 1 runningNo Delay High Priority Task 1 running\\rr\\n");n");
+}}
+}
+}
+void NoDelay_Task2(void *argument)
+void NoDelay_Task2(void *argument)
+{
+{
+while (1)while (1)
+{{
+UART_Print("Objective 4 UART_Print("Objective 4 -- No Delay Low Priority Task 2 runningNo Delay Low Priority Task 2 running\\rr\\n");n");
+}}
+}
+}
+/* Objective 5: LED blinking tasks with critical section for printing */
+/* Objective 5: LED blinking tasks with critical section for printing */
+void LED_Task1(void *argument)
+void LED_Task1(void *argument)
+{
+{
+while (1)while (1)
+{{
+HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+UART_Print("Objective 5 UART_Print("Objective 5 -- LED Task 1: Printing inside critical sectionLED Task 1: Printing inside critical section\\rr\\n");n");
+vTaskDelay(pdMS_TO_TICKS(500));vTaskDelay(pdMS_TO_TICKS(500));
+}}
+}
+}
+void LED_Task2(void *argument)
+void LED_Task2(void *argument)
+{
+{
+while (1)while (1)
+{{
+HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+UART_Print("Objective 5 UART_Print("Objective 5 -- LED Task 2: Printing inside critical sectionLED Task 2: Printing inside critical section\\rr\\n");n");
+vTaskDelay(pdMS_TO_TICKS(1000));vTaskDelay(pdMS_TO_TICKS(1000));
+}}
+}
+}
+/* USER CODE END 0 */
+/* USER CODE END 0 */
+int main(void)
+int main(void)
+{
+{
+/* MCU Configura/* MCU Configurationtion----------------------------------------------------------------------------------------------------------------*/*/
+HAL_Init();HAL_Init();
+SystemClock_Config();SystemClock_Config();
+MX_GPIO_Init();MX_GPIO_Init();
+MX_USART2_UART_Init();MX_USART2_UART_Init();
+/* USER CODE BEGIN 2 *//* USER CODE BEGIN 2 */
+char buffer[150];char buffer[150];
+xMutex = xSemaphoreCreateMutex();xMutex = xSemaphoreCreateMutex();
+sprintf(buffer, "sprintf(buffer, "\\rr\\nMutex handle value = %pnMutex handle value = %p\\rr\\n", (void *)xMutex);n", (void *)xMutex);
+HAL_UART_Transmit(&huart2,HAL_UART_Transmit(&huart2,
+(uint8_t *)buffer,(uint8_t *)buffer,
+strlen(buffer),strlen(buffer),
+HAL_MAX_DELAY);HAL_MAX_DELAY);
+if (xMutex != NULL)if (xMutex != NULL)
+{{
+HHAL_UART_Transmit(&huart2,AL_UART_Transmit(&huart2,
+(uint8_t *)"Mutex created successfully(uint8_t *)"Mutex created successfully\\rr\\n",n",
+strlen("Mutex created successfullystrlen("Mutex created successfully\\rr\\n"),n"),
+HAL_MAX_DELAY);HAL_MAX_DELAY);
+}}
+elseelse
+{{
+HAL_UART_Transmit(&hHAL_UART_Transmit(&huart2,uart2,
+(uint8_t *)"Mutex creation failed(uint8_t *)"Mutex creation failed\\rr\\n",n",
+strlen("Mutex creation failedstrlen("Mutex creation failed\\rr\\n"),n"),
+HAL_MAX_DELAY);HAL_MAX_DELAY);
+}}
+/*/*
+Objective 1:Objective 1:
+Two different tasks print two different messagesTwo different tasks print two different messages
+using the same shared UART printer.using the same shared UART printer.
+*/*/
+xTaskCreate(Print_Task1,xTaskCreate(Print_Task1,
+"PrintTask1","PrintTask1",
+128,128,
+NULL,NULL,
+2,2,
+&PrintTask1Ha&PrintTask1Handle);ndle);
+xTaskCreate(Print_Task2,xTaskCreate(Print_Task2,
+"PrintTask2","PrintTask2",
+128,128,
+NULL,NULL,
+1,1,
+&PrintTask2Handle);&PrintTask2Handle);
+/*/*
+Objective 3:Objective 3:
+Same priority tasks.Same priority tasks.
+Both tasks are assigned priority 2.Both tasks are assigned priority 2.
+*/*/
+xTaskCreate(SamePriority_Task1,xTaskCreate(SamePriority_Task1,
+"SameTask1","SameTask1",
+128,128,
+NULL,NULL,
+2,2,
+&SameTask1Handle);&SameTask1Handle);
+xTaskCreate(SamePriority_Task2,xTaskCreate(SamePriority_Task2,
+"SameTask2","SameTask2",
+128,128,
+NULL,NULL,
+2,2,
+&SameTask2Handle);&SameTask2Handle);
+/*/*
+Objective 4:Objective 4:
+No delay tasks.No delay tasks.
+These tasks are commented because they can continuously occupy the CPU.These tasks are commented because they can continuously occupy the CPU.
+To test this objective, uncomment the two xTaskCreate() lines below.To test this objective, uncomment the two xTaskCreate() lines below.
+It is better to comment other task creation lines while testing noIt is better to comment other task creation lines while testing no--delay tasks.delay tasks.
+*/*/
+/*/*
+xTaskCreate(NoDelay_Task1,xTaskCreate(NoDelay_Task1,
+"NoDelay1","NoDelay1",
+128,128,
+NULL,NULL,
+3,3,
+&NoDelayTask1Handle);&NoDelayTask1Handle);
+xTaskCreate(NoDelay_Task2,xTaskCreate(NoDelay_Task2,
+"NoDelay2","NoDelay2",
+128,128,
+NULL,NULL,
+1,1,
+&NoDelayTask2Handle);&NoDelayTask2Handle);
+*/*/
+/*/*
+Objective 5:Objective 5:
+Two LED blinking tasks with mutex protected UART printing.Two LED blinking tasks with mutex protected UART printing.
+LED Task 1 has higher priority than LED Task 2.LED Task 1 has higher priority than LED Task 2.
+*/*/
+xTaskCreate(LED_Task1,xTaskCreate(LED_Task1,
+"LEDTask1","LEDTask1",
+128,128,
+NULL,NULL,
+3,3,
+&LEDTask1Handle);&LEDTask1Handle);
+xTaskCreate(LED_Task2,xTaskCreate(LED_Task2,
+"LEDTask2","LEDTask2",
+128,128,
+NULL,NULL,
+1,1,
+&LEDTask2Handle);&LEDTask2Handle);
+vTaskStartScheduler();vTaskStartScheduler();
+/* USER CODE END 2 *//* USER CODE END 2 */
+while (1)while (1)
+{{
+}}
+}
+}
+/**
+/**
+* @brief System Clock Configuration* @brief System Clock Configuration
+* @retval None* @retval None
+*/*/
+void SystemClock_Config(void)
+void SystemClock_Config(void)
+{
+{
+/*/*
+This function is normally generated by STM32CubeIDE.This function is normally generated by STM32CubeIDE.
+Keep your own CubeIDEKeep your own CubeIDE--generated SystemClock_Config() funcgenerated SystemClock_Config() function here.tion here.
+Do not leave this function empty in your actual project.Do not leave this function empty in your actual project.
+*/*/
+}
+}
+/**
+/**
+* @brief USART2 Initialization Function* @brief USART2 Initialization Function
+* @param None* @param None
+* @retval None* @retval None
+*/*/
+static void MX_USART2_UART_Init(void)
+static void MX_USART2_UART_Init(void)
+{
+{
+/*/*
+This function is normally generated by STM32CubeIDE.This function is normally generated by STM32CubeIDE.
+If you already have MX_USART2_UART_Init() in your main.c,If you already have MX_USART2_UART_Init() in your main.c,
+use the CubeIDEuse the CubeIDE--generated version instead of this sample.generated version instead of this sample.
+*/*/
+huart2.Instance = USART2;huart2.Instance = USART2;
+huart2.Init.BaudRate = 1huart2.Init.BaudRate = 115200;15200;
+huart2.Init.WordLength = UART_WORDLENGTH_8B;huart2.Init.WordLength = UART_WORDLENGTH_8B;
+huart2.Init.StopBits = UART_STOPBITS_1;huart2.Init.StopBits = UART_STOPBITS_1;
+huart2.Init.Parity = UART_PARITY_NONE;huart2.Init.Parity = UART_PARITY_NONE;
+huart2.Init.Mode = UART_MODE_TX_RX;huart2.Init.Mode = UART_MODE_TX_RX;
+huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+huart2.Init.OverSamphuart2.Init.OverSampling = UART_OVERSAMPLING_16;ling = UART_OVERSAMPLING_16;
+if (HAL_UART_Init(&huart2) != HAL_OK)if (HAL_UART_Init(&huart2) != HAL_OK)
+{{
+Error_Handler();Error_Handler();
+}}
+}
+}
+/**
+/**
+* @brief GPIO Initialization Function* @brief GPIO Initialization Function
+* @param None* @param None
+* @retval None* @retval None
+*/*/
+static void MX_GPIO_Init(void)
+static void MX_GPIO_Init(void)
+{
+{
+/*/*
+This GPIO code is for boards using LD2, such as STM32 Nucleo boards.This GPIO code is for boards using LD2, such as STM32 Nucleo boards.
+If CubeIDE already generated MX_GPIO_Init(), use that version.If CubeIDE already generated MX_GPIO_Init(), use that version.
+*/*/
+GPIO_InitTypeDef GPIO_InitStruct = {0};GPIO_InitTypeDef GPIO_InitStruct = {0};
+__HAL_RCC_GPIOA_CLK_ENABLE();__HAL_RCC_GPIOA_CLK_ENABLE();
+HAL_GPIO_WritePin(HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+GPIO_InitStruct.Pin = LD2_Pin;GPIO_InitStruct.Pin = LD2_Pin;
+GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+GPIO_InitStruct.Pull = GPIO_NOPULL;GPIO_InitStruct.Pull = GPIO_NOPULL;
+GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InHAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);itStruct);
+}
+}
+/**
+/**
+* @brief Error Handler* @brief Error Handler
+* @retval None* @retval None
+*/*/
+void Error_Handler(void)
+void Error_Handler(void)
+{
+{
+__disable_irq();__disable_irq();
+while (1)while (1)
+{{
+}}
+}
+}
+OUTPUT
