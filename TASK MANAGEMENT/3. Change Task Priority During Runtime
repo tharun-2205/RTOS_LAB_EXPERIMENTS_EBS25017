@@ -1,0 +1,19 @@
+#include <Arduino_FreeRTOS.h>
+#define LED 1 6
+TaskHandle_t Task 1 Handle;
+void Task 1 (void *
+pinMode(LED 1 ,
+while ( 1
+digitalWrite(LED 1 , !digitalRead(LED 1
+Serial.print("TASK 1 Priority = ");
+Serial.println(uxTaskPriorityGet(Task 1 Handle));
+vTaskDelay 1000 / portTICK_PERIOD_
+void ControlTask(void *pvParameters)
+vTaskDelay( 5000 / portTICK_PERIOD_
+Serial.println("Changing TASK 1 Priority to 4
+// CHANGE PRIORITY DURING RUNTIME
+vTaskPrioritySet(Task 1 Handle, 4
+while ( 1
+vTaskDelay( 1000 / portTICK_PERIOD_
+}
+} void setup()void setup() {{ Serial.begin(Serial.begin(96009600);); xTaskCreate(TaskxTaskCreate(Task11, "Task, "Task11", ", 128128, NULL, , NULL, 11, &Task, &Task11Handle);Handle); xTaskCreate(ControlTask, "Control", xTaskCreate(ControlTask, "Control", 128128, NULL, , NULL, 22, NULL);, NULL); }} void loop()void loop() {{ }}
