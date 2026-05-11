@@ -1,0 +1,76 @@
+Structure Definition
+typedef struct
+{
+int value;
+unsigned long timestamp;
+} MailData;
+Mailbox Creation
+QueueHandle_t mailbox;
+mailbox = xQueueCreate(1, sizeof(MailData)); // Queue size = 1 → Mailbox
+Sender Task (Send Data + Timestamp)
+void SenderTask(void *argument)
+{
+MailData data;
+for(;;)
+{
+data.value = 100;
+data.timestamp = HAL_GetTick(); // time in ms
+xQueueOverwrite(mailbox, &data);
+osDelay(2000);
+data.value = 200;
+data.timestamp = HAL_GetTick();
+xQueueOverwrite(mailbox, &data);
+osDelay(2000);
+}
+}
+void SenderTask(void *pvParameters)
+{
+MailData data;
+data.value = 0;
+while(1)
+{
+data.value++;
+data.timestamp = millis();
+xQueueOverwrite(mailbox, &data);
+vTaskDelay(1000 / portTICK_PERIOD_MS);
+}
+}
+Receiver Task (Receive + Display)
+void ReceiverTask(void *pvParameters)
+{
+MailData receivedData;
+while(1)
+{
+if (xQueueReceive(mailbox, &receivedData, portMAX_DELAY) == pdPASS)
+{
+Serial.print("Value: ");
+Serial.print(receivedData.value);
+Serial.print(" Timestamp: ");
+Serial.println(receivedData.timestamp);
+}
+}
+}
+Receiver Task (Receive + Display)
+void ReceiverTask(void *pvParameters)
+{
+MailData receivedData;
+while(1)
+{
+if (xQueueReceive(mailbox, &receivedData, portMAX_DELAY) == pdPASS)
+{
+Serial.print("Value: ");
+Serial.print(receivedData.value);
+Serial.print(" Timestamp: ");
+Serial.println(receivedData.timestamp);
+}
+}
+}
+Task Creation
+xTaskCreate(SenderTask, "Sender", 128, NULL, 1, NULL);
+xTaskCreate(ReceiverTask, "Receiver", 128, NULL, 1, NULL);
+Important APIs Used
+xQueueCreate() // Create mailbox
+xQueueOverwrite() // Send (overwrite old data)
+xQueueReceive() // Receive data
+millis() // Get system time in milliseconds
+vTaskDelay() // Task delay
