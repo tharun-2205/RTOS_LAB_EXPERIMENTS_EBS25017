@@ -1,0 +1,36 @@
+Mailbox Creation
+QueueHandle_t mailbox;
+mailbox = xQueueCreate(1, sizeof(int)); // Queue size = 1 → Mailbox
+Sender Task (Transmit Data)
+void SenderTask(void *argument)
+{
+int val1 = 10;
+int val2 = 20;
+for(;;)
+{
+xQueueOverwrite(mailbox, &val1); // Send 10
+osDelay(2000);
+xQueueOverwrite(mailbox, &val2); // Overwrite with 20
+osDelay(2000);
+}
+}
+Receiver Task (Receive Data)
+void ReceiverTask(void *argument)
+{
+int received;
+for(;;)
+{
+if (xQueueReceive(mailbox, &received, portMAX_DELAY) == pdTRUE)
+{
+printf("Received: %d\n", received); // Print value
+}
+}
+}
+Task Creation
+osThreadNew(SenderTask, NULL, &SenderTask_attributes);
+osThreadNew(ReceiverTask, NULL, &ReceiverTask_attributes);
+Important API Used
+xQueueCreate() // Create mailbox
+xQueueOverwrite() // Send (overwrite old data)
+xQueueReceive() // Receive data
+osDelay() // Delay task
