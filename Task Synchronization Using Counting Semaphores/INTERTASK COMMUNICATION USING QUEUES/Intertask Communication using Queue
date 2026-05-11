@@ -1,0 +1,64 @@
+Intertask Communication using Queue
+#include <Arduino_FreeRTOS.h>
+#include <queue.h>
+/* Queue Handle */
+QueueHandle_t myQueue;
+/* Task Prototypes */
+void TaskA(void *pvParameters);
+void TaskB(void *pvParameters);
+void TaskC(void *pvParameters)
+void setup()
+{
+Serial.begin(9600)
+/* Create Queue
+Queue Length = 5
+Data Type = char
+*/
+myQueue = xQueueCreate(5, sizeof(char));
+if(myQueue != NULL)
+{
+Serial.println("Queue Created");
+}
+/* Create Tasks */
+xTaskCreate(TaskA, "TaskA", 128, NULL, 2, NULL);
+xTaskCreate(TaskB, "TaskB", 128, NULL, 2, NULL);
+xTaskCreate(TaskC, "TaskC", 128, NULL, 1, NULL);
+}
+void loop()
+{
+}
+/* Task A */
+void TaskA(void *pvParameters)
+{
+char data = 'A';
+while(1)
+{
+xQueueSend(myQueue, &data, portMAX_DELAY);
+Serial.println("Task A Sent: A");
+vTaskDelay(1000 / portTICK_PERIOD_MS);
+}
+}
+/* Task B */
+void TaskB(void *pvParameters)
+{
+char data = 'B';
+while(1)
+{
+xQueueSend(myQueue, &data, portMAX_DELAY);
+Serial.println("Task B Sent: B")
+vTaskDelay(1500 / portTICK_PERIOD_MS);
+}
+}
+/* Task C */
+void TaskC(void *pvParameters)
+{
+char receivedData
+while(1)
+{
+if(xQueueReceive(myQueue,
+&receivedData,
+portMAX_DELAY) == pdTRUE)
+{
+Serial.print("Task C Received: ");
+Serial.println(receivedData);
+}}}
