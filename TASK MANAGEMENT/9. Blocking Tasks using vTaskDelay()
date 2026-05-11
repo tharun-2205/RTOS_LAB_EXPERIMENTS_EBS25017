@@ -1,0 +1,15 @@
+#include <Arduino_FreeRTOS.h>
+#define LED 1 6
+void Task 1 (void *
+pinMode(LED 1 ,
+while ( 1
+digitalWrite(LED 1 ,
+Serial.println("LED ON");
+// BLOCKING TASK
+vTaskDe lay( 1000 / portTICK_PERIOD_
+digitalWrite(LED 1 ,
+Serial.println("LED OFF");
+// BLOCKING TASK
+vTaskDelay( 1000 / portTICK_PERIOD_
+void setup()
+void setup() {{ Serial.begin(Serial.begin(96009600);); xTaskCreate(TaskxTaskCreate(Task11, "Task, "Task11", ", 128128, NULL, , NULL, 11, NULL);, NULL); }} voivoid loop()d loop() {{ }
