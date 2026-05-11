@@ -1,0 +1,132 @@
+#include "main.h"
+#include "cmsis_os.h"
+#include <string.h>
+#include <stdio.h>
+UART_HandleTypeDef huart2;
+/* FreeRTOS Handles */
+osThreadId defaultTaskHandle;
+osThreadId ledTaskHandle;
+SemaphoreHandle_t binarySem;
+SemaphoreHandle_t uartMutex;
+/* Function Prototypes */
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_USART2_UART_Init(void);
+void StartDefaultTask(void const * argument);
+void StartLedTask(void const * argument);
+/* UART Print Function */
+void UART_Print(char *msg)
+{
+if(xSemaphoreTake(uartMutex, portMAX_DELAY) == pdTRUE)
+{
+HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+xSemaphoreGive(uartMutex);
+}
+}
+int main(void)
+{
+HAL_Init();
+SystemClock_Config();
+MX_GPIO_Init();
+MX_USART2_UART_Init();
+/* Create Binary Semaphore */
+binarySem = xSemaphoreCreateBinary();
+/* Create Mutex */
+uartMutex = xSemaphoreCreateMutex();
+/* Create Tasks */
+osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+osThreadDef(ledTask, StartLedTask, osPriorityAboveNormal, 0, 128);
+ledTaskHandle = osThreadCreate(osThread(ledTask), NULL);
+/* Start Scheduler */
+osKernelStart();
+while (1)
+{
+}
+}
+/* Default Task */
+void StartDefaultTask(void const * argument)
+{
+char msg[100];
+while(1)
+{
+sprintf(msg, "Default Task Running\r\n");
+UART_Print(msg);
+osDelay(2000);
+}
+}
+/* LED Task */
+void StartLedTask(void const * argument)
+{
+char msg[100];
+while(1)
+{
+/* Wait for semaphore from interrupt */
+if(xSemaphoreTake(binarySem, portMAX_DELAY) == pdTRUE)
+{
+HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+sprintf(msg, "Interrupt Received -> LED Toggled\r\n");
+UART_Print(msg);
+}
+}
+}
+/* External Interrupt Callback */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+if(GPIO_Pin == GPIO_PIN_13)
+{
+xSemaphoreGiveFromISR(binarySem, &xHigherPriorityTaskWoken);
+portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+}
+/* USART2 Init */
+static void MX_USART2_UART_Init(void)
+{
+huart2.Instance = USART2;
+huart2.Init.BaudRate = 115200;
+huart2.Init.WordLength = UART_WORDLENGTH_8B;
+huart2.Init.StopBits = UART_STOPBITS_1;
+huart2.Init.Parity = UART_PARITY_NONE;
+huart2.Init.Mode = UART_MODE_TX_RX;
+huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+if (HAL_UART_Init(&huart2) != HAL_OK)
+{
+Error_Handler();
+}
+}
+/* GPIO Init */
+static void MX_GPIO_Init(void)
+{
+GPIO_InitTypeDef GPIO_InitStruct = {0};
+__HAL_RCC_GPIOA_CLK_ENABLE();
+__HAL_RCC_GPIOC_CLK_ENABLE();
+/* LED Pin */
+HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+GPIO_InitStruct.Pin = GPIO_PIN_5;
+GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+GPIO_InitStruct.Pull = GPIO_NOPULL;
+GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+/* Push Button Interrupt Pin */
+GPIO_InitStruct.Pin = GPIO_PIN_13;
+GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+GPIO_InitStruct.Pull = GPIO_NOPULL;
+HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+/* EXTI Interrupt Enable */
+HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+}
+/* System Clock Config */
+void SystemClock_Config(void)
+{
+}
+/* Error Handler */
+void Error_Handler(void)
+{
+__disable_irq();
+while (1)
+{
+}
+}
