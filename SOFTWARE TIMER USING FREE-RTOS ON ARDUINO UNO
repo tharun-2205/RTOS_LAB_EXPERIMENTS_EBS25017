@@ -1,0 +1,27 @@
+#include <Arduino_FreeRTOS.h>
+#include <timers.h> 
+#define LED_PIN 7 TimerHandle_t xTimer; 
+bool ledState = false; 
+// Timer callback function
+void vTimerCallback(TimerHandle_t xTimer) { ledState = !ledState; digitalWrite(LED_PIN, ledState); 
+Serial.println("Software Timer Running"); 
+}
+void setup() { pinMode(LED_PIN, OUTPUT); Serial.begin(9600); 
+// Create software timer
+xTimer = xTimerCreate( "LEDTimer", pdMS_TO_TICKS(1000), pdTRUE, (void *)0, vTimerCallback);
+// Start timer 
+if (xTimer != NULL) { xTimerStart(xTimer, 0); 
+} 
+} 
+void loop() 
+{ 
+// Empty because RTOS handles timer execution
+}
+Important APIs Used
+xTimerCreate() // Create software timer xTimerStart() 
+// Start timer 
+pdMS_TO_TICKS() 
+// Convert milliseconds to RTOS ticks
+digitalWrite()
+// Control LED state
+Serial.println() // Print output
