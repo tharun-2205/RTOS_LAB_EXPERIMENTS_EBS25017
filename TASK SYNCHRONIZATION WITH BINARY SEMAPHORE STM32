@@ -1,0 +1,44 @@
+a. Binary Semaphore Creation
+SemaphoreHandle_t S;
+SemaphoreHandle_t T;
+S = xSemaphoreCreateBinary();
+T = xSemaphoreCreateBinary();
+b. Initially Give Semaphore S
+xSemaphoreGive(S);
+c. Task 1 (Wait on S and Give T)
+void Task1(void *argument)
+{
+while(1)
+{
+if(xSemaphoreTake(S, portMAX_DELAY) == pdTRUE)
+{
+printf("Task 1 using Printer\r\n");
+vTaskDelay(pdMS_TO_TICKS(500));
+printf("Task 1 Giving T\r\n");
+xSemaphoreGive(T);
+}
+}
+}
+d. Task 2 (Wait on T and Give S)
+void Task2(void *argument)
+{
+while(1)
+{
+if(xSemaphoreTake(T, portMAX_DELAY) == pdTRUE)
+{
+printf("Task 2 using Printer\r\n");
+vTaskDelay(pdMS_TO_TICKS(500));
+printf("Task 2 Giving S\r\n");
+xSemaphoreGive(S);
+}
+}
+}
+e. Task Creation
+xTaskCreate(Task1, "Task1", 128, NULL,2,NULL);
+xTaskCreate(Task2, "Task2", 128, NULL,1,NULL);
+f. Important APIs Used
+xSemaphoreCreateBinary() // Create Binary Semaphore
+xSemaphoreTake() // Take/Acquire Semaphore
+xSemaphoreGive() // Release Semaphore
+xTaskCreate() // Create Task
+vTaskDelay() // Delay Task
