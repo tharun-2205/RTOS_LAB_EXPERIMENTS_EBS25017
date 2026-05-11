@@ -1,0 +1,47 @@
+Structure Definition
+typedef struct
+{
+int value;
+uint32_t timestamp;
+} MailData;
+Mailbox Creation
+QueueHandle_t mailbox;
+mailbox = xQueueCreate(1, sizeof(MailData)); // Queue size = 1 → Mailbox
+Sender Task (Send Data + Timestamp)
+void SenderTask(void *argument)
+{
+MailData data;
+for(;;)
+{
+data.value = 100;
+data.timestamp = HAL_GetTick(); // time in ms
+xQueueOverwrite(mailbox, &data);
+osDelay(2000);
+data.value = 200;
+data.timestamp = HAL_GetTick();
+xQueueOverwrite(mailbox, &data);
+osDelay(2000);
+}
+}
+Receiver Task (Receive + Display)
+void ReceiverTask(void *argument)
+{
+MailData received;
+for(;;)
+{
+if (xQueueReceive(mailbox, &received, portMAX_DELAY) == pdTRUE)
+{
+printf("Value: %d | Time: %lu ms\n",
+received.value, received.timestamp);
+}
+}
+}
+Task Creation
+osThreadNew(SenderTask, NULL, &SenderTask_attributes);
+osThreadNew(ReceiverTask, NULL, &ReceiverTask_attributes);
+Important APIs Used
+xQueueCreate() // Create mailbox
+xQueueOverwrite() // Send (overwrite old data)
+xQueueReceive() // Receive data
+HAL_GetTick() // Get system time (ms)
+osDelay() // Task delay
